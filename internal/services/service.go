@@ -1,13 +1,15 @@
 package services
 
-import "Text-Gathering-Service/internal/repository"
+import (
+	"unicode"
+)
 
-func CheckText(text string) bool {
-	repo := repository.New()
-	repo.StoreIntoDB(text)
-	repo.Close()
+func IsLaoText(text string) bool {
+	for _, r := range text {
+		if r != ' ' && !unicode.Is(unicode.Lao, r) {
+			return false
+		}
+	}
+	return true
 
-	return false
 }
-
-// filter receive lao langage only

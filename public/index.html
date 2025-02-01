@@ -9,6 +9,7 @@
         event.preventDefault();
 
         const formData = new FormData(document.getElementById("myForm"));
+        let resElement = document.getElementById("response");
 
         try {
           const response = await fetch("http://localhost:3000/send-text", {
@@ -17,10 +18,11 @@
           });
 
           const data = await response.json();
-          document.getElementById("response").innerText =
-            "Server Response: " + data.message;
+          resElement.innerText = "Server Response: " + data.message;
+          resElement.style.color = (data.status_color) ? "green" : "red";
+          console.log(data)
         } catch (error) {
-          document.getElementById("response").innerText = "Error: " + error;
+          resElement.innerText = "Error: " + error;
         }
       }
     </script>

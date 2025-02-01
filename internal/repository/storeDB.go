@@ -20,12 +20,22 @@ func New() *Database {
 	}
 }
 
-// check that word or sentense already have or not
+func (d *Database) _checkExistDatas(t string) bool {
+	var exists bool
+	query := "SELECT EXISTS(SELECT 1 FROM GatheredText WHERE text = ?)"
+	d.db.QueryRow(query, t).Scan(&exists)
 
-func (d *Database) StoreIntoDB(text string) {
-	misc.Must(d.db.Exec("INSERT INTO GatheredText(text) VALUES (?)", text))
+	return exists
 }
 
-func (d *Database) Close() {
-	defer d.db.Close()
+func (d *Database) StoreIntoDB(text string) bool {
+	if !d._checkExistDatas(text) {
+		misc.Must(d.db.Exec("INSERT INTO GatheredText(text) VALUES (?)", text))
+		defer d.db.Close()
+
+		return true
+	} else {
+
+		return false
+	}
 }

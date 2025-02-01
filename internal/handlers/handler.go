@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"Text-Gathering-Service/internal/repository"
 	"Text-Gathering-Service/internal/services"
 
 	"github.com/gofiber/fiber/v3"
@@ -12,11 +13,21 @@ func ServeWebPage() fiber.Handler {
 }
 
 func GetText(c fiber.Ctx) error {
+	var res_text string
+	color_status := false
 	text := c.FormValue("message")
-	status := services.CheckText(text)
-	if status {
-		return c.JSON(fiber.Map{"message": "Woww what a nice text"})
+
+	isLao := services.IsLaoText(text)
+	repo := repository.New()
+
+	if !isLao {
+		res_text = "That's not Lao langages"
+	} else if !repo.StoreIntoDB(text) {
+		res_text = "Datas already have"
 	} else {
-		return c.JSON(fiber.Map{"message": "Nahh I already have that one"})
+		res_text = "Thank's you for helping"
+		color_status = true
 	}
+
+	return c.JSON(fiber.Map{"message": res_text, "status_color": color_status})
 }
