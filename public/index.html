@@ -5,35 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Send Form Data</title>
     <script>
-      async function sendRequest(event) {
-        event.preventDefault();
+      const ws = new WebSocket("ws://localhost:3000/ws");
 
-        const formData = new FormData(document.getElementById("myForm"));
-        let resElement = document.getElementById("response");
+      ws.onopen = () => {
+        console.log("Connected to WebSocket server");
+      };
 
-        try {
-          const response = await fetch("http://localhost:3000/send-text", {
-            method: "POST",
-            body: formData,
-          });
+      ws.onmessage = (event) => {
+        const resElement = document.getElementById("response");
+        let data = JSON.parse(event.data);
+        resElement.style.color = data.status ? "green" : "red";
+        resElement.innerHTML = data.content;
 
-          const data = await response.json();
-          resElement.innerText = "Server Response: " + data.message;
-          resElement.style.color = (data.status_color) ? "green" : "red";
-          console.log(data)
-        } catch (error) {
-          resElement.innerText = "Error: " + error;
-        }
+        console.log(data);
+      };
+
+      function sendMessage() {
+        const messageElement = document.getElementById("message");
+        console.log(messageElement.value);
+        ws.send(messageElement.value);
       }
     </script>
   </head>
+
   <body>
     <h2>Send Form Data</h2>
-    <form id="myForm" onsubmit="sendRequest(event)">
+
+    <div>
       <label for="message">Message:</label>
-      <input type="text" id="message" name="message" required />
-      <button type="submit">Send</button>
-    </form>
+      <input type="text" id="message" required />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+
     <p id="response"></p>
   </body>
 </html>

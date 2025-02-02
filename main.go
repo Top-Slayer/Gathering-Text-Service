@@ -4,8 +4,9 @@ import (
 	"Text-Gathering-Service/internal/handlers"
 	"log"
 
-	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/cors"
+	"github.com/gofiber/contrib/websocket"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
@@ -13,9 +14,10 @@ func main() {
 	app := fiber.New()
 	app.Use(cors.New())
 
-	app.Get("/", handlers.ServeWebPage())
+	app.Static("/", "./public")
 
-	app.Post("/send-text", handlers.GetText)
+	app.Use("/ws", handlers.UpgradeWebsocketProtocol)
+	app.Get("/ws", websocket.New(handlers.ConnectWebsocket))
 
 	log.Fatal(app.Listen(":3000"))
 }
