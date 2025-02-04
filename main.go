@@ -3,18 +3,37 @@ package main
 import (
 	"Text-Gathering-Service/internal/handlers"
 	"log"
+	"os"
+
+	"github.com/gofiber/template/html/v2"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
-func main() {
+func _setDomain() string {
+	args := os.Args
+	var ip string
+	if len(args) <= 1 {
+		ip = "http://localhost:3000/ws"
+	} else {
+		ip = "https://" + args[1] + "/ws"
+	}
 
-	app := fiber.New()
+	log.Println("Server Start: \033[34m" + ip + "\033[0m")
+
+	return ip
+}
+
+func main() {
+	engine := html.New("./public", ".html")
+	app := fiber.New(fiber.Config{
+		Views: engine,
+	})
 	app.Use(cors.New())
 
-	app.Static("/", "./public")
+	app.Get("/", handlers.ServeWebpage(_setDomain()))
 
 	app.Use("/ws", handlers.UpgradeWebsocketProtocol)
 	app.Get("/ws", websocket.New(handlers.ConnectWebsocket))

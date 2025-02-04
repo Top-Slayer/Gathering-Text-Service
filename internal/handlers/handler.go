@@ -33,6 +33,12 @@ func _getText(text string) (string, bool) {
 	return res_text, status
 }
 
+func ServeWebpage(ip string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return c.Render("index", fiber.Map{"ip_addr": ip})
+	}
+}
+
 func UpgradeWebsocketProtocol(c *fiber.Ctx) error {
 	if websocket.IsWebSocketUpgrade(c) {
 		c.Locals("allowed", true)

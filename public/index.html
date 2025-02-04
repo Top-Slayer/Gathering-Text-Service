@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Send Form Data</title>
     <script>
-      const ws = new WebSocket("ws://localhost:3000/ws");
+      const ws = new WebSocket("{{.ip_addr}}");
 
       ws.onopen = () => {
         console.log("Connected to WebSocket server");
