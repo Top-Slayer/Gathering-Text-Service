@@ -16,7 +16,7 @@ func _setDomain() string {
 	args := os.Args
 	var ip string
 	if len(args) <= 1 {
-		ip = "http://localhost:3000/ws"
+		ip = "http://localhost:3000/send-text"
 	} else {
 		ip = "https://" + args[1] + "/ws"
 	}
@@ -35,8 +35,9 @@ func main() {
 
 	app.Get("/", handlers.ServeWebpage(_setDomain()))
 
-	app.Use("/ws", handlers.UpgradeWebsocketProtocol)
-	app.Get("/ws", websocket.New(handlers.ConnectWebsocket))
+	app.Use("/send-text", handlers.UpgradeWebsocketProtocol)
+
+	app.Get("/send-text", websocket.New(handlers.GetDatasFromClient))
 
 	log.Fatal(app.Listen(":3000"))
 }

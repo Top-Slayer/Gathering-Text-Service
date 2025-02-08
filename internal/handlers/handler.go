@@ -48,8 +48,14 @@ func UpgradeWebsocketProtocol(c *fiber.Ctx) error {
 	return fiber.ErrUpgradeRequired
 }
 
-func ConnectWebsocket(c *websocket.Conn) {
+func GetDatasFromClient(c *websocket.Conn) {
 	defer c.Close()
+
+	repo := repository.New()
+	c.WriteMessage(websocket.TextMessage, misc.Must(json.Marshal(repo.GetAllCategoryDatas())))
+
+	log.Println("Client IP: ", c.IP())
+	log.Println("-- Update categories --")
 
 	for {
 		_, msg, err := c.ReadMessage()
@@ -66,4 +72,5 @@ func ConnectWebsocket(c *websocket.Conn) {
 
 		c.WriteMessage(websocket.TextMessage, misc.Must(json.Marshal(res)))
 	}
+
 }
