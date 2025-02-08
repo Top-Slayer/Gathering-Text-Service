@@ -35,7 +35,7 @@ func main() {
 
 	// app.Get("/", handlers.ServeWebpage(_setDomain()))
 
-	app.Use("/send-text", handlers.UpgradeWebsocketProtocol)
+	// app.Use("/send-text", handlers.UpgradeWebsocketProtocol)
 
 	app.Get("/send-text", websocket.New(handlers.GetDatasFromClient))
 

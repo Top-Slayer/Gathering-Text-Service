@@ -15,7 +15,7 @@ elif [[ "$1" == "add" ]]; then
     if [ -z $2 ]; then 
         echo "$0: Missing some argument"
         echo -e "  add    <arg> \t add category into database"
-        echo -e "\nEx: ./$0 add \"body\""
+        echo -e "\nEx: $0 add \"body\""
         exit 1
     fi
     if sqlite3 $db "SELECT 1 FROM $table WHERE name='$2' LIMIT 1;" | grep -q 1; then
@@ -35,7 +35,7 @@ elif [[ "$1" == "delete" ]]; then
     if [ -z $2 ]; then 
         echo "$0: Missing some argument"
         echo -e "  delete <arg> \t delete a category from database"
-        echo -e "\nEx: ./$0 delete 1"
+        echo -e "\nEx: $0 delete 1"
         exit 1
     fi
     sqlite3 $db "DELETE FROM $table WHERE id = $2"
