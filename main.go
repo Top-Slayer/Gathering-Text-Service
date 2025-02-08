@@ -33,7 +33,7 @@ func main() {
 	})
 	app.Use(cors.New())
 
-	app.Get("/", handlers.ServeWebpage(_setDomain()))
+	// app.Get("/", handlers.ServeWebpage(_setDomain()))
 
 	app.Use("/send-text", handlers.UpgradeWebsocketProtocol)
 

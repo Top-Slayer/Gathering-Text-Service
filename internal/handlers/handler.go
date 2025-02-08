@@ -42,7 +42,7 @@ func ServeWebpage(ip string) fiber.Handler {
 func UpgradeWebsocketProtocol(c *fiber.Ctx) error {
 	if websocket.IsWebSocketUpgrade(c) {
 		c.Locals("allowed", true)
-		log.Println("Client connected")
+		log.Println("Client connected | IP ", c.IP())
 		return c.Next()
 	}
 	return fiber.ErrUpgradeRequired
@@ -54,7 +54,6 @@ func GetDatasFromClient(c *websocket.Conn) {
 	repo := repository.New()
 	c.WriteMessage(websocket.TextMessage, misc.Must(json.Marshal(repo.GetAllCategoryDatas())))
 
-	log.Println("Client IP: ", c.IP())
 	log.Println("-- Update categories --")
 
 	for {
