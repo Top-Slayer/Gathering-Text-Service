@@ -20,11 +20,11 @@ func _getText(text string) (string, bool) {
 	repo := repository.New()
 
 	if !isLao {
-		res_text = "That's not Lao langages"
+		res_text = "ປະໂຫຍກນີ້ບໍ່ແມ່ນພາສາລາວ"
 	} else if !repo.StoreIntoDB(text) {
-		res_text = "Datas already have"
+		res_text = "ປະໂຫຍກນີ້ມີໃນລະບົບແລ້ວກະລຸນາປ້ອນໃຫມ່"
 	} else {
-		res_text = "Thank's you for helping"
+		res_text = "ພວກເຮົາໄດ້ບັນທຶກປະໂຫຍກທີ່ຖຶກປ້ອນໄວ້ໃນລະບົບແລ້ວ"
 		status = true
 	}
 
