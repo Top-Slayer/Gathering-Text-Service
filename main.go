@@ -2,8 +2,11 @@ package main
 
 import (
 	"Text-Gathering-Service/internal/handlers"
+	"Text-Gathering-Service/misc"
+	"io"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gofiber/template/html/v2"
 
@@ -11,6 +14,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
+
+func _createLogFIle() {
+	for {
+		file := misc.Must(os.OpenFile("details.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666))
+		log.SetOutput(io.MultiWriter(os.Stdout, file))
+		time.Sleep(3600 * time.Second)
+	}
+}
 
 func _setDomain() string {
 	args := os.Args
@@ -39,5 +50,6 @@ func main() {
 
 	app.Get("/send-text", websocket.New(handlers.GetDatasFromClient))
 
+	go _createLogFIle()
 	log.Fatal(app.Listen(":3000"))
 }

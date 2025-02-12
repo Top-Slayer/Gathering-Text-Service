@@ -13,7 +13,11 @@ type Database struct {
 
 func New() *Database {
 	file := misc.Must(sql.Open("sqlite3", "./internal/repository/database.db"))
-	misc.Must(file.Exec(`CREATE TABLE IF NOT EXISTS GatheredText(text TEXT NOT NULL)`))
+	misc.Must(file.Exec(
+		`CREATE TABLE IF NOT EXISTS GatheredText(
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			text TEXT NOT NULL
+		)`))
 	misc.Must(file.Exec(
 		`CREATE TABLE IF NOT EXISTS Categories(
 			id INTEGER PRIMARY KEY AUTOINCREMENT,

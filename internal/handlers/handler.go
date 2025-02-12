@@ -10,17 +10,24 @@ import (
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
-func _getText(text string) (string, bool) {
+var clientsMutex = make(map[string]*websocket.Conn)
+
+func _getText(text string, uuid string) (string, bool) {
 	var res_text string
 	status := false
 
+	services.ClearSpace(&text)
 	isLao := services.IsLaoText(text)
+	isFormatError := services.CheckLaoFormat(text)
 	repo := repository.New()
 
 	if !isLao {
 		res_text = "ປະໂຫຍກນີ້ບໍ່ແມ່ນພາສາລາວ"
+	} else if !isFormatError {
+		res_text = "ຮູບແບບຂອງປະໂຫຍກບໍ່ຖຶກຕ້ອງ"
 	} else if !repo.StoreIntoDB(text) {
 		res_text = "ປະໂຫຍກນີ້ມີໃນລະບົບແລ້ວກະລຸນາປ້ອນໃຫມ່"
 	} else {
@@ -28,7 +35,7 @@ func _getText(text string) (string, bool) {
 		status = true
 	}
 
-	log.Printf("Incoming message from client: %s | Status: %v\n", text, status)
+	log.Printf("UUID:[%s] input: %s | Status: %v\n", uuid, text, status)
 
 	return res_text, status
 }
@@ -49,21 +56,26 @@ func UpgradeWebsocketProtocol(c *fiber.Ctx) error {
 
 func GetDatasFromClient(c *websocket.Conn) {
 	defer c.Close()
-	log.Printf("Client IP: %s connected\n", c.RemoteAddr().String())
+
+	uuid := uuid.New().String()
+	clientsMutex[uuid] = c
+
+	log.Printf("Client UUID:[%s] connected\n", uuid)
 
 	repo := repository.New()
 	c.WriteMessage(websocket.TextMessage, misc.Must(json.Marshal(repo.GetAllCategoryDatas())))
 
-	log.Println("-- Update categories --")
+	log.Printf("UUID:[%s]: -- Update categories --\n", uuid)
 
 	for {
 		_, msg, err := c.ReadMessage()
 		if err != nil {
-			log.Println("Client disconnected: ", err)
+			log.Println("Client disconnected: ", uuid)
+			delete(clientsMutex, uuid)
 			return
 		}
 
-		t, s := _getText(string(msg))
+		t, s := _getText(string(msg), uuid)
 		res := models.ResponseDatas{
 			Content: t,
 			Status:  s,
