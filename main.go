@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"time"
 
 	"github.com/gofiber/template/html/v2"
 
@@ -19,7 +18,6 @@ func _createLogFIle() {
 	for {
 		file := misc.Must(os.OpenFile("details.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666))
 		log.SetOutput(io.MultiWriter(os.Stdout, file))
-		time.Sleep(3600 * time.Second)
 	}
 }
 
