@@ -5,8 +5,11 @@ import (
 	"Text-Gathering-Service/internal/services"
 	"Text-Gathering-Service/misc"
 	"Text-Gathering-Service/models"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
+	"os"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
@@ -20,13 +23,11 @@ func _getText(text string, uuid string) (string, bool) {
 	status := false
 
 	services.ClearSpace(&text)
-	isLao := services.IsLaoText(text)
-	isFormatError := services.CheckLaoFormat(text)
 	repo := repository.New()
 
-	if !isLao {
+	if !services.IsLaoText(text) {
 		res_text = "ປະໂຫຍກນີ້ບໍ່ແມ່ນພາສາລາວ"
-	} else if !isFormatError {
+	} else if !services.CheckLaoFormat(text) {
 		res_text = "ຮູບແບບຂອງປະໂຫຍກບໍ່ຖຶກຕ້ອງ"
 	} else if !repo.StoreIntoDB(text) {
 		res_text = "ປະໂຫຍກນີ້ມີໃນລະບົບແລ້ວກະລຸນາປ້ອນໃຫມ່"
@@ -43,6 +44,14 @@ func _getText(text string, uuid string) (string, bool) {
 func ServeWebpage(ip string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		return c.Render("index", fiber.Map{"ip_addr": ip})
+	}
+}
+
+func ServeAdminPage(ip string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		return c.Render("admin", fiber.Map{
+			"ip_addr": ip,
+		})
 	}
 }
 
@@ -67,6 +76,8 @@ func GetDatasFromClient(c *websocket.Conn) {
 
 	log.Printf("UUID:[%s]: -- Update categories --\n", uuid)
 
+	var res models.ResponseDatas
+
 	for {
 		_, msg, err := c.ReadMessage()
 		if err != nil {
@@ -75,13 +86,53 @@ func GetDatasFromClient(c *websocket.Conn) {
 			return
 		}
 
-		t, s := _getText(string(msg), uuid)
-		res := models.ResponseDatas{
-			Content: t,
-			Status:  s,
+		var receivedMsg models.RequestDatas
+
+		if json.Unmarshal(msg, &receivedMsg) != nil {
+			res.Content = fmt.Sprintf("Error parsing JSON: %v", err)
+			res.Status = false
+			continue
+		}
+
+		res.Content, res.Status = _getText(receivedMsg.Text, uuid)
+
+		if res.Status {
+			audioBytes, err := base64.StdEncoding.DecodeString(receivedMsg.Audio)
+			if err != nil {
+				res.Content = fmt.Sprintf("Error invalid format: %v", err)
+				res.Status = false
+				continue
+			}
+
+			os.MkdirAll("internal/repository/wait_clips/", os.ModePerm)
+			filename := fmt.Sprintf("internal/repository/wait_clips/%s.wav", receivedMsg.Text)
+			if os.WriteFile(filename, audioBytes, 0644) != nil {
+				res.Content = fmt.Sprintf("Error saving audio: %v", err)
+				res.Status = false
+				continue
+			}
 		}
 
 		c.WriteMessage(websocket.TextMessage, misc.Must(json.Marshal(res)))
 	}
+}
 
+func CheckIncomeDatas(c *websocket.Conn) {
+	defer c.Close()
+
+	log.Printf("Admin login\n")
+
+	for {
+		_, msg, err := c.ReadMessage()
+		if err != nil {
+			log.Println("Admin disconnected")
+			return
+		}
+
+		if services.AutorizeAdmin(msg) {
+			fmt.Println("True: ", msg)
+		} else {
+			fmt.Println("Wrong: ", msg)
+		}
+	}
 }

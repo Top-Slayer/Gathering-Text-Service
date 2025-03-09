@@ -21,13 +21,13 @@ func _createLogFIle() {
 	}
 }
 
-func _setDomain() string {
+func _setDomain(path string) string {
 	args := os.Args
 	var ip string
 	if len(args) <= 1 {
-		ip = "http://localhost:3000/send-text"
+		ip = "ws://localhost:3000" + path
 	} else {
-		ip = "https://" + args[1] + "/ws"
+		ip = "wss://" + args[1] + path
 	}
 
 	log.Println("Server Start: \033[34m" + ip + "\033[0m")
@@ -42,7 +42,10 @@ func main() {
 	})
 	app.Use(cors.New())
 
-	// app.Get("/", handlers.ServeWebpage(_setDomain()))
+	// app.Get("/", handlers.ServeWebpage(_setDomain("/sent-text")))
+	// app.Get("/admin-page", handlers.ServeAdminPage(_setDomain("/connectCheckIncomeDatas")))
+
+	// app.Get("/connectCheckIncomeDatas", websocket.New(handlers.CheckIncomeDatas))
 
 	// app.Use("/send-text", handlers.UpgradeWebsocketProtocol)
 

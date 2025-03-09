@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ADMIN</title>
+    <script>
+      const ws = new WebSocket("{{.ip_addr}}");
+
+      ws.onmessage = (event) => {
+        let data = JSON.parse(event.data);
+        console.log(data);
+      };
+
+      function login() {
+        ws.send(document.getElementById("password").value);
+
+        const container = document.getElementById("container");
+
+        const outerDiv = document.createElement("div");
+
+        const span1 = document.createElement("span");
+        span1.innerText = "time";
+        span1.style.marginRight = "10px";
+
+        const span2 = document.createElement("span");
+        span2.innerText = "text";
+        span2.style.marginRight = "10px";
+
+        const button = document.createElement("button");
+        button.innerText = "Accept";
+
+        outerDiv.appendChild(span1);
+        outerDiv.appendChild(span2);
+        outerDiv.appendChild(button);
+
+        container.appendChild(outerDiv);
+      }
+    </script>
+  </head>
+
+  <body>
+    <h1>This is admin page</h1>
+    <div>
+      <input type="password" id="password" />
+      <button onclick="login()">It's me</button>
+    </div>
+    <div id="container"></div>
+  </body>
+</html>

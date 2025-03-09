@@ -14,9 +14,10 @@ type Database struct {
 func New() *Database {
 	file := misc.Must(sql.Open("sqlite3", "./internal/repository/database.db"))
 	misc.Must(file.Exec(
-		`CREATE TABLE IF NOT EXISTS GatheredText(
+		`CREATE TABLE IF NOT EXISTS NewGatheredText(
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			text TEXT NOT NULL
+			text TEXT NOT NULL,
+			audioText TEXT NOT NULL
 		)`))
 	misc.Must(file.Exec(
 		`CREATE TABLE IF NOT EXISTS Categories(
@@ -31,7 +32,7 @@ func New() *Database {
 
 func (d *Database) _checkExistDatas(t string) bool {
 	var exists bool
-	query := `SELECT EXISTS(SELECT 1 FROM GatheredText WHERE text = ?)`
+	query := `SELECT EXISTS(SELECT 1 FROM NewGatheredText WHERE text = ?)`
 	d.db.QueryRow(query, t).Scan(&exists)
 
 	return exists
@@ -39,7 +40,7 @@ func (d *Database) _checkExistDatas(t string) bool {
 
 func (d *Database) StoreIntoDB(text string) bool {
 	if !d._checkExistDatas(text) {
-		misc.Must(d.db.Exec(`INSERT INTO GatheredText(text) VALUES (?)`, text))
+		misc.Must(d.db.Exec(`INSERT INTO NewGatheredText(text, audioText) VALUES (?, ?)`, text, text+".wav"))
 		defer d.db.Close()
 
 		return true

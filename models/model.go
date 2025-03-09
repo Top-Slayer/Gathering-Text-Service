@@ -5,6 +5,7 @@ type ResponseDatas struct {
 	Status  bool   `json:"status"`
 }
 
-type CategoryDatas struct {
-	Name string `json:"name"`
+type RequestDatas struct {
+	Text  string `json:"text"`
+	Audio string `json:"voice"`
 }

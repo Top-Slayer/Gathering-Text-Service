@@ -22,8 +22,20 @@
 
       function sendMessage() {
         const messageElement = document.getElementById("message");
-        console.log(messageElement.value);
-        ws.send(messageElement.value);
+        const audioElement = document.getElementById("audio");
+
+        const reader = new FileReader();
+        reader.onload = function () {
+          const payload = {
+            text: messageElement.value,
+            voice: reader.result.split(',')[1],
+          };
+
+          console.log(payload)
+          ws.send(JSON.stringify(payload));
+        };
+
+        reader.readAsDataURL(audioElement.files[0]);
       }
     </script>
   </head>
@@ -34,9 +46,16 @@
     <div>
       <label for="message">Message:</label>
       <input type="text" id="message" required />
+      <input type="file" id="audio" accept="audio/*" required />
       <button onclick="sendMessage()">Send</button>
     </div>
 
     <p id="response"></p>
   </body>
 </html>
+
+<div>
+  <span></span>
+  <span></span>
+  <button></button>
+</div>
