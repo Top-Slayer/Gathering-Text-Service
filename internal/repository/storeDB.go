@@ -17,7 +17,8 @@ func New() *Database {
 		`CREATE TABLE IF NOT EXISTS NewGatheredText(
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			text TEXT NOT NULL,
-			audioText TEXT NOT NULL
+			audioText TEXT NOT NULL,
+			check BOOL NOT NULL
 		)`))
 	misc.Must(file.Exec(
 		`CREATE TABLE IF NOT EXISTS Categories(
@@ -40,7 +41,7 @@ func (d *Database) _checkExistDatas(t string) bool {
 
 func (d *Database) StoreIntoDB(text string) bool {
 	if !d._checkExistDatas(text) {
-		misc.Must(d.db.Exec(`INSERT INTO NewGatheredText(text, audioText) VALUES (?, ?)`, text, text+".wav"))
+		misc.Must(d.db.Exec(`INSERT INTO NewGatheredText(text, audioText, check) VALUES (?, ?, ?)`, text, text+".wav", false))
 		defer d.db.Close()
 
 		return true
