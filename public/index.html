@@ -20,7 +20,7 @@
         console.log(data);
       };
 
-      function sendMessage() {
+      function sendMessage() { // continue make admin page 
         const messageElement = document.getElementById("message");
         const audioElement = document.getElementById("audio");
 
@@ -28,10 +28,10 @@
         reader.onload = function () {
           const payload = {
             text: messageElement.value,
-            voice: reader.result.split(',')[1],
+            voice: reader.result.split(",")[1],
           };
 
-          console.log(payload)
+          console.log(payload);
           ws.send(JSON.stringify(payload));
         };
 
@@ -50,12 +50,6 @@
       <button onclick="sendMessage()">Send</button>
     </div>
 
-    <p id="response"></p>
+    <span id="response"></span>
   </body>
 </html>
-
-<div>
-  <span></span>
-  <span></span>
-  <button></button>
-</div>

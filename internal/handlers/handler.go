@@ -49,9 +49,7 @@ func ServeWebpage(ip string) fiber.Handler {
 
 func ServeAdminPage(ip string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		return c.Render("admin", fiber.Map{
-			"ip_addr": ip,
-		})
+		return c.Render("admin", fiber.Map{"ip_addr": ip})
 	}
 }
 
@@ -98,9 +96,10 @@ func GetDatasFromClient(c *websocket.Conn) {
 
 		if res.Status {
 			audioBytes, err := base64.StdEncoding.DecodeString(receivedMsg.Audio)
-			if err != nil {
+			if len(audioBytes) <= 0 || err != nil {
 				res.Content = fmt.Sprintf("Error invalid format: %v", err)
 				res.Status = false
+				c.WriteMessage(websocket.TextMessage, misc.Must(json.Marshal(res)))
 				continue
 			}
 
@@ -109,6 +108,7 @@ func GetDatasFromClient(c *websocket.Conn) {
 			if os.WriteFile(filename, audioBytes, 0644) != nil {
 				res.Content = fmt.Sprintf("Error saving audio: %v", err)
 				res.Status = false
+				c.WriteMessage(websocket.TextMessage, misc.Must(json.Marshal(res)))
 				continue
 			}
 		}

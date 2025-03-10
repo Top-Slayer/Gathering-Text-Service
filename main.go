@@ -42,14 +42,13 @@ func main() {
 	})
 	app.Use(cors.New())
 
-	// app.Get("/", handlers.ServeWebpage(_setDomain("/sent-text")))
-	// app.Get("/admin-page", handlers.ServeAdminPage(_setDomain("/connectCheckIncomeDatas")))
-
-	// app.Get("/connectCheckIncomeDatas", websocket.New(handlers.CheckIncomeDatas))
-
-	// app.Use("/send-text", handlers.UpgradeWebsocketProtocol)
+	app.Get("/", handlers.ServeWebpage(_setDomain("/send-text")))
+	app.Get("/admin-page", handlers.ServeAdminPage(_setDomain("/connectCheckIncomeDatas")))
 
 	app.Get("/send-text", websocket.New(handlers.GetDatasFromClient))
+	app.Get("/connectCheckIncomeDatas", websocket.New(handlers.CheckIncomeDatas))
+
+	// app.Use("/send-text", handlers.UpgradeWebsocketProtocol)
 
 	go _createLogFIle()
 	log.Fatal(app.Listen(":3000"))
