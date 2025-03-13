@@ -29,7 +29,7 @@ func _getText(text string, uuid string) (string, bool) {
 		res_text = "ປະໂຫຍກນີ້ບໍ່ແມ່ນພາສາລາວ"
 	} else if !services.CheckLaoFormat(text) {
 		res_text = "ຮູບແບບຂອງປະໂຫຍກບໍ່ຖຶກຕ້ອງ"
-	} else if !repo.StoreIntoDB(text) {
+	} else if !repo.StoreIntoDB(text, false) {
 		res_text = "ປະໂຫຍກນີ້ມີໃນລະບົບແລ້ວກະລຸນາປ້ອນໃຫມ່"
 	} else {
 		res_text = "ພວກເຮົາໄດ້ບັນທຶກປະໂຫຍກທີ່ຖຶກປ້ອນໄວ້ໃນລະບົບແລ້ວ"
@@ -79,7 +79,6 @@ func GetDatasFromClient(c *websocket.Conn) {
 	for {
 		_, msg, err := c.ReadMessage()
 		if err != nil {
-			log.Println("Client disconnected: ", uuid)
 			delete(clientsMutex, uuid)
 			return
 		}
@@ -118,21 +117,57 @@ func GetDatasFromClient(c *websocket.Conn) {
 }
 
 func CheckIncomeDatas(c *websocket.Conn) {
-	defer c.Close()
+	defer func() {
+		log.Println("Admin disconnected")
+		c.Close()
+	}()
 
-	log.Printf("Admin login\n")
+	var option string = "//auth"
 
 	for {
 		_, msg, err := c.ReadMessage()
 		if err != nil {
-			log.Println("Admin disconnected")
+			log.Println("Error:", err)
 			return
 		}
 
-		if services.AutorizeAdmin(msg) {
-			fmt.Println("True: ", msg)
-		} else {
-			fmt.Println("Wrong: ", msg)
+		switch option {
+		case "//auth":
+			if services.AutorizeAdmin(msg) {
+				log.Printf("Admin login\n")
+				fmt.Println("True: ", msg)
+				option = "//respone"
+			} else {
+				fmt.Println("Wrong: ", msg)
+			}
+		case "//respone":
+			var res []models.ResCheckedDatas
+
+			datas := repository.New().GetAllWaitClipsDatas()
+
+			for _, data := range datas {
+				res = append(res, models.ResCheckedDatas{
+					ID:    data.ID,
+					Text:  data.Text,
+					Voice: services.EncodeVoiceToBase64(data.Voice),
+				})
+			}
+
+			c.WriteMessage(websocket.TextMessage, misc.Must(json.Marshal(res)))
+			option = "//receive"
+		case "//receive":
+			var req models.ReqCheckedDatas
+
+			if json.Unmarshal(msg, &req) == nil {
+				repository.New().ChangeStatusClipDatas(req.ID, req.Text, req.Status)
+				fmt.Println(req)
+			}
 		}
+
+		// Implement admin page
+		// Create approve_clips dir
+
+		// Rename string in audioText column
+		// UPDATE NewGatheredText SET audioText = 'internal/repository/wait_clips/' || audioText;
 	}
 }

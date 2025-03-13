@@ -1,8 +1,11 @@
 package services
 
 import (
+	"Text-Gathering-Service/misc"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
+	"os"
 	"strings"
 	"unicode"
 )
@@ -56,4 +59,15 @@ func AutorizeAdmin(pass []byte) bool {
 	} else {
 		return false
 	}
+}
+
+func EncodeVoiceToBase64(path string) string {
+	file := misc.Must(os.Open(path))
+	defer file.Close()
+
+	fileData := misc.Must(os.ReadFile(path))
+
+	encodedData := base64.StdEncoding.EncodeToString(fileData)
+
+	return encodedData
 }

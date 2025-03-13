@@ -1,3 +1,6 @@
 database.db
 details.log
 wait_clips
+successful_clips
+not_successful_clips
+app.*

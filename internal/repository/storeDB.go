@@ -2,7 +2,9 @@ package repository
 
 import (
 	"Text-Gathering-Service/misc"
+	"Text-Gathering-Service/models"
 	"database/sql"
+	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -39,9 +41,11 @@ func (d *Database) _checkExistDatas(t string) bool {
 	return exists
 }
 
-func (d *Database) StoreIntoDB(text string) bool {
+func (d *Database) StoreIntoDB(text string, status bool) bool {
 	if !d._checkExistDatas(text) {
-		misc.Must(d.db.Exec(`INSERT INTO NewGatheredText(text, audioText) VALUES (?, ?)`, text, text+".wav"))
+		misc.Must(d.db.Exec(`INSERT INTO NewGatheredText(text, audioText, isCheck) 
+							VALUES (?, ?, ?)`,
+			text, "internal/repository/wait_clips/"+text+".wav", status))
 		defer d.db.Close()
 
 		return true
@@ -79,4 +83,54 @@ func (d *Database) GetAllCategoryDatas() []map[string]interface{} {
 	}
 
 	return res
+}
+
+func (d *Database) GetAllWaitClipsDatas() []models.ResCheckedDatas {
+	rows := misc.Must(d.db.Query(`
+		SELECT id, text, audioText 
+		FROM NewGatheredText 
+		WHERE isCheck = 0`))
+	defer rows.Close()
+
+	var datas []models.ResCheckedDatas
+
+	for rows.Next() {
+		var data models.ResCheckedDatas
+		err := rows.Scan(&data.ID, &data.Text, &data.Voice)
+		if err != nil {
+			panic(err)
+		}
+		datas = append(datas, data)
+	}
+
+	return datas
+}
+
+func (d *Database) ChangeStatusClipDatas(id int64, text string, status bool) {
+	var path string
+	if status {
+		path = "internal/repository/successful_clips/"
+		loc_path := path + text + ".wav"
+		os.Rename("internal/repository/wait_clips/"+text+".wav", loc_path)
+		os.MkdirAll(path, os.ModePerm)
+		misc.Must(d.db.Exec(`
+			UPDATE NewGatheredText 
+			SET isCheck = 1,
+				text = ?,
+				audioText = ?
+			WHERE id = ?`,
+			text, loc_path, id))
+	} else {
+		path = "internal/repository/not_successful_clips/"
+		loc_path := path + text + ".wav"
+		os.Rename("internal/repository/wait_clips/"+text+".wav", loc_path)
+		os.MkdirAll(path, os.ModePerm)
+		misc.Must(d.db.Exec(`
+			UPDATE NewGatheredText 
+			SET isCheck = -1,
+				audioText = ?
+			WHERE id = ?`,
+			loc_path, id))
+	}
+	defer d.db.Close()
 }
