@@ -163,11 +163,5 @@ func CheckIncomeDatas(c *websocket.Conn) {
 				fmt.Println(req)
 			}
 		}
-
-		// Implement admin page
-		// Create approve_clips dir
-
-		// Rename string in audioText column
-		// UPDATE NewGatheredText SET audioText = 'internal/repository/wait_clips/' || audioText;
 	}
 }

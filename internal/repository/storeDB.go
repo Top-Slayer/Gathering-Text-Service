@@ -4,6 +4,8 @@ import (
 	"Text-Gathering-Service/misc"
 	"Text-Gathering-Service/models"
 	"database/sql"
+	"fmt"
+	"log"
 	"os"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -93,14 +95,28 @@ func (d *Database) GetAllWaitClipsDatas() []models.ResCheckedDatas {
 	defer rows.Close()
 
 	var datas []models.ResCheckedDatas
+	var rem_id []int64
 
 	for rows.Next() {
 		var data models.ResCheckedDatas
+
 		err := rows.Scan(&data.ID, &data.Text, &data.Voice)
 		if err != nil {
 			panic(err)
 		}
+
+		if _, err := os.Open(data.Voice); err != nil && os.IsNotExist(err) {
+			_ = os.Remove(data.Voice)
+			rem_id = append(rem_id, data.ID)
+			fmt.Printf("ID:%d Text:%s Path:%s\n", data.ID, data.Text, data.Voice)
+			log.Printf("This path '%s' was deleted", data.Voice)
+			continue
+		}
 		datas = append(datas, data)
+	}
+
+	for _, id := range rem_id {
+		misc.Must(d.db.Exec(`DELETE FROM NewGatheredText WHERE id = ?`, id))
 	}
 
 	return datas
@@ -110,9 +126,9 @@ func (d *Database) ChangeStatusClipDatas(id int64, text string, status bool) {
 	var path string
 	if status {
 		path = "internal/repository/successful_clips/"
+		os.MkdirAll(path, os.ModePerm)
 		loc_path := path + text + ".wav"
 		os.Rename("internal/repository/wait_clips/"+text+".wav", loc_path)
-		os.MkdirAll(path, os.ModePerm)
 		misc.Must(d.db.Exec(`
 			UPDATE NewGatheredText 
 			SET isCheck = 1,
@@ -122,9 +138,9 @@ func (d *Database) ChangeStatusClipDatas(id int64, text string, status bool) {
 			text, loc_path, id))
 	} else {
 		path = "internal/repository/not_successful_clips/"
+		os.MkdirAll(path, os.ModePerm)
 		loc_path := path + text + ".wav"
 		os.Rename("internal/repository/wait_clips/"+text+".wav", loc_path)
-		os.MkdirAll(path, os.ModePerm)
 		misc.Must(d.db.Exec(`
 			UPDATE NewGatheredText 
 			SET isCheck = -1,
