@@ -34,7 +34,7 @@
           text: text,
           status: status,
         };
-        console.log(payload)
+        console.log(payload);
         ws.send(JSON.stringify(payload));
       }
 
@@ -42,9 +42,14 @@
 
       ws.onmessage = (event) => {
         let datas = JSON.parse(event.data);
-        console.log(datas)
+        console.log(datas);
 
         const container = document.getElementById("container");
+
+        if (datas == null) {
+          alert("Await records are empty..")
+          return;
+        }
 
         datas.forEach((e) => {
           const outerDiv = document.createElement("div");
