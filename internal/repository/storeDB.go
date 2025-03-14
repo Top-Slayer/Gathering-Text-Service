@@ -37,7 +37,11 @@ func New() *Database {
 
 func (d *Database) _checkExistDatas(t string) bool {
 	var exists bool
-	query := `SELECT EXISTS(SELECT 1 FROM NewGatheredText WHERE text = ?)`
+	query := `SELECT EXISTS (
+				SELECT 1 
+				FROM NewGatheredText 
+				WHERE text = ?
+			)`
 	d.db.QueryRow(query, t).Scan(&exists)
 
 	return exists
@@ -124,11 +128,18 @@ func (d *Database) GetAllWaitClipsDatas() []models.ResCheckedDatas {
 
 func (d *Database) ChangeStatusClipDatas(id int64, text string, status bool) {
 	var path string
+	var old_text string
+
+	err := d.db.QueryRow("SELECT text FROM NewGatheredText WHERE id = ?", id).Scan(&old_text)
+	if err != nil {
+		log.Println(err)
+	}
+
 	if status {
 		path = "internal/repository/successful_clips/"
 		os.MkdirAll(path, os.ModePerm)
 		loc_path := path + text + ".wav"
-		os.Rename("internal/repository/wait_clips/"+text+".wav", loc_path)
+		os.Rename("internal/repository/wait_clips/"+old_text+".wav", loc_path)
 		misc.Must(d.db.Exec(`
 			UPDATE NewGatheredText 
 			SET isCheck = 1,
@@ -140,7 +151,7 @@ func (d *Database) ChangeStatusClipDatas(id int64, text string, status bool) {
 		path = "internal/repository/not_successful_clips/"
 		os.MkdirAll(path, os.ModePerm)
 		loc_path := path + text + ".wav"
-		os.Rename("internal/repository/wait_clips/"+text+".wav", loc_path)
+		os.Rename("internal/repository/wait_clips/"+old_text+".wav", loc_path)
 		misc.Must(d.db.Exec(`
 			UPDATE NewGatheredText 
 			SET isCheck = -1,
