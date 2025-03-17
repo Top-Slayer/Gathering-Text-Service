@@ -18,12 +18,11 @@ import (
 
 var clientsMutex = make(map[string]*websocket.Conn)
 
-func _getText(text string, uuid string) (string, bool) {
+func _getText(text string, uuid string, repo *repository.Database) (string, bool) {
 	var res_text string
 	status := false
 
 	services.ClearSpace(&text)
-	repo := repository.New()
 
 	if !services.IsLaoText(text) {
 		res_text = "ປະໂຫຍກນີ້ບໍ່ແມ່ນພາສາລາວ"
@@ -62,14 +61,18 @@ func UpgradeWebsocketProtocol(c *fiber.Ctx) error {
 }
 
 func GetDatasFromClient(c *websocket.Conn) {
-	defer c.Close()
-
+	repo := repository.New()
 	uuid := uuid.New().String()
 	clientsMutex[uuid] = c
 
+	defer func() {
+		log.Printf("Client UUID:[%s] disconnected\n", uuid)
+		repo.CloseDatabase()
+		c.Close()
+	}()
+
 	log.Printf("Client UUID:[%s] connected\n", uuid)
 
-	repo := repository.New()
 	c.WriteMessage(websocket.TextMessage, misc.Must(json.Marshal(repo.GetAllCategoryDatas())))
 
 	log.Printf("UUID:[%s]: -- Update categories --\n", uuid)
@@ -91,7 +94,7 @@ func GetDatasFromClient(c *websocket.Conn) {
 			continue
 		}
 
-		res.Content, res.Status = _getText(receivedMsg.Text, uuid)
+		res.Content, res.Status = _getText(receivedMsg.Text, uuid, repo)
 
 		if res.Status {
 			audioBytes, err := base64.StdEncoding.DecodeString(receivedMsg.Audio)
@@ -102,8 +105,9 @@ func GetDatasFromClient(c *websocket.Conn) {
 				continue
 			}
 
+			latest_id := repo.GetLatestID()
 			os.MkdirAll("internal/repository/wait_clips/", os.ModePerm)
-			filename := fmt.Sprintf("internal/repository/wait_clips/%s.wav", receivedMsg.Text)
+			filename := fmt.Sprintf("internal/repository/wait_clips/voice_id_%d.wav", latest_id)
 			if os.WriteFile(filename, audioBytes, 0644) != nil {
 				res.Content = fmt.Sprintf("Error saving audio: %v", err)
 				res.Status = false
@@ -117,8 +121,11 @@ func GetDatasFromClient(c *websocket.Conn) {
 }
 
 func CheckIncomeDatas(c *websocket.Conn) {
+	repo := repository.New()
+
 	defer func() {
 		log.Println("Admin disconnected")
+		repo.CloseDatabase()
 		c.Close()
 	}()
 
@@ -143,7 +150,7 @@ func CheckIncomeDatas(c *websocket.Conn) {
 		case "//respone":
 			var res []models.ResCheckedDatas
 
-			datas := repository.New().GetAllWaitClipsDatas()
+			datas := repo.GetAllWaitClipsDatas()
 
 			for _, data := range datas {
 				res = append(res, models.ResCheckedDatas{

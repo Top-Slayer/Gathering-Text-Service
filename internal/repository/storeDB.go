@@ -49,10 +49,12 @@ func (d *Database) _checkExistDatas(t string) bool {
 
 func (d *Database) StoreIntoDB(text string, status bool) bool {
 	if !d._checkExistDatas(text) {
-		misc.Must(d.db.Exec(`INSERT INTO NewGatheredText(text, audioText, isCheck) 
-							VALUES (?, ?, ?)`,
-			text, "internal/repository/wait_clips/"+text+".wav", status))
-		defer d.db.Close()
+		latest_id := d.GetLatestID() + 1
+		path := fmt.Sprintf("internal/repository/wait_clips/voice_id_%d.wav", latest_id)
+		misc.Must(d.db.Exec(`INSERT INTO NewGatheredText
+							(id, text, audioText, isCheck) 
+							VALUES (?, ?, ?, ?)`,
+			latest_id, text, path, status))
 
 		return true
 	} else {
@@ -137,27 +139,43 @@ func (d *Database) ChangeStatusClipDatas(id int64, text string, status bool) {
 
 	if status {
 		path = "internal/repository/successful_clips/"
-		os.MkdirAll(path, os.ModePerm)
-		loc_path := path + text + ".wav"
-		os.Rename("internal/repository/wait_clips/"+old_text+".wav", loc_path)
-		misc.Must(d.db.Exec(`
+	} else {
+		path = "internal/repository/not_successful_clips/"
+	}
+
+	os.MkdirAll(path, os.ModePerm)
+	id_voice := fmt.Sprintf("voice_id_%d.wav", id)
+	loc_path := fmt.Sprintf("internal/repository/wait_clips/%s", id_voice)
+	des_path := fmt.Sprintf("%s%s", path, id_voice)
+
+	var isCheck int8
+
+	if status {
+		isCheck = 1
+	} else {
+		isCheck = -1
+	}
+
+	os.Rename(loc_path, des_path)
+	misc.Must(d.db.Exec(`
 			UPDATE NewGatheredText 
-			SET isCheck = 1,
+			SET isCheck = ?,
 				text = ?,
 				audioText = ?
 			WHERE id = ?`,
-			text, loc_path, id))
-	} else {
-		path = "internal/repository/not_successful_clips/"
-		os.MkdirAll(path, os.ModePerm)
-		loc_path := path + text + ".wav"
-		os.Rename("internal/repository/wait_clips/"+old_text+".wav", loc_path)
-		misc.Must(d.db.Exec(`
-			UPDATE NewGatheredText 
-			SET isCheck = -1,
-				audioText = ?
-			WHERE id = ?`,
-			loc_path, id))
+		isCheck, text, des_path, id))
+}
+
+func (d *Database) GetLatestID() int64 {
+	var id int64
+	err := d.db.QueryRow("SELECT MAX(id) FROM NewGatheredText", id).Scan(&id)
+	if err != nil {
+		log.Println(err)
+		return 0
 	}
-	defer d.db.Close()
+	return id
+}
+
+func (d *Database) CloseDatabase() {
+	d.db.Close()
 }
